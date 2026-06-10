@@ -323,8 +323,8 @@ app.post('/api/login', async (req, res) => {
     });
 });
  
-// Get All Users (Admin only - no auth for now)
-app.get('/api/admin/users', (req, res) => {
+// Get All Users (Admin only)
+app.get('/api/admin/users', adminAuth, (req, res) => {
     const userList = Array.from(users.values()).map(u => ({
         username: u.username,
         employeeId: u.employeeId,
@@ -335,8 +335,8 @@ app.get('/api/admin/users', (req, res) => {
     res.json({ users: userList });
 });
  
-// Create User (Admin only - no auth for now)
-app.post('/api/admin/users', async (req, res) => {
+// Create User (Admin only)
+app.post('/api/admin/users', adminAuth, async (req, res) => {
     const { username, password, employeeName } = req.body;
     
     if (!username || !password) {
@@ -377,8 +377,8 @@ app.post('/api/admin/users', async (req, res) => {
     });
 });
  
-// Delete User (Admin only - no auth for now)
-app.delete('/api/admin/users/:username', async (req, res) => {
+// Delete User (Admin only)
+app.delete('/api/admin/users/:username', adminAuth, async (req, res) => {
     const { username } = req.params;
     
     if (username === 'admin') {
@@ -398,8 +398,8 @@ app.delete('/api/admin/users/:username', async (req, res) => {
     res.json({ success: true });
 });
  
-// Update User Password (Admin only - no auth for now)
-app.put('/api/admin/users/:username/password', async (req, res) => {
+// Update User Password (Admin only)
+app.put('/api/admin/users/:username/password', adminAuth, async (req, res) => {
     const { username } = req.params;
     const { newPassword } = req.body;
     
@@ -427,7 +427,7 @@ app.put('/api/admin/users/:username/password', async (req, res) => {
 // ============================================
  
 // Create User - Alias mit auto-generated password
-app.post('/api/users/create', async (req, res) => {
+app.post('/api/users/create', adminAuth, async (req, res) => {
     const { username, employeeName } = req.body;
     
     if (!username || !employeeName) {
@@ -473,7 +473,7 @@ app.post('/api/users/create', async (req, res) => {
 });
  
 // Delete User by ID - Alias
-app.delete('/api/users/:employeeId', async (req, res) => {
+app.delete('/api/users/:employeeId', adminAuth, async (req, res) => {
     const employeeId = parseInt(req.params.employeeId);
     
     if (employeeId === 0) {
@@ -910,7 +910,7 @@ app.get('/api/agents', (req, res) => {
 // ============================================
 // ✅ NEW ENDPOINT: Get Employees (merged users + agents)
 // ============================================
-app.get('/api/employees', (req, res) => {
+app.get('/api/employees', adminAuth, (req, res) => {
     const now = Date.now();
     
     // Combine users with agent status
