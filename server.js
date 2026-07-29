@@ -787,15 +787,19 @@ app.delete('/api/admin/creator-profiles/:id', adminAuth, async (req, res) => {
 const translations = new Map();
 
 // DeepL Proxy — key stays in Railway env, never in the client binary
+// lang is the source language of `text` (de/es/it); defaults to DE for
+// older overlay builds that don't send it yet.
+const DEEPL_SOURCE_LANG = { de: 'DE', es: 'ES', it: 'IT' };
 app.post('/api/deepl', appAuth, async (req, res) => {
-    const { text } = req.body;
+    const { text, lang } = req.body;
     if (!text) return res.status(400).json({ error: 'Missing text' });
 
     const deepLKey = process.env.DEEPL_KEY;
     if (!deepLKey) return res.status(500).json({ error: 'DeepL not configured' });
 
+    const sourceLang = DEEPL_SOURCE_LANG[lang] || 'DE';
     const https = require('https');
-    const body = new URLSearchParams({ text, source_lang: 'DE', target_lang: 'EN-US' }).toString();
+    const body = new URLSearchParams({ text, source_lang: sourceLang, target_lang: 'EN-US' }).toString();
 
     const tryEndpoint = (host, cb) => {
         const reqOpts = {
