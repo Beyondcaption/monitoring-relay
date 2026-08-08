@@ -358,7 +358,7 @@ app.post('/api/admin/users', adminAuth, async (req, res) => {
         employeeId: newEmployeeId,
         name: employeeName || username,
         role: 'employee',
-        createdAt: new Date().toISOString()
+        createdAt: Date.now()
     };
     
     const success = await saveUser(newUser);
@@ -452,7 +452,7 @@ app.post('/api/users/create', adminAuth, async (req, res) => {
         employeeId: newEmployeeId,
         name: employeeName || username,
         role: 'employee',
-        createdAt: new Date().toISOString()
+        createdAt: Date.now()
     };
     
     const success = await saveUser(newUser);
