@@ -835,6 +835,45 @@ app.post('/api/deepl', appAuth, async (req, res) => {
     });
 });
 
+// Claude proxy — fallback for chatters whose ISP blocks the direct route to
+// api.anthropic.com (082326: network-level "Failed to fetch" on Generate).
+// The client sends its own Anthropic key in x-api-key; it is forwarded 1:1 and
+// never stored or logged here. Status + body are passed through verbatim so the
+// overlay's error handling (401/429/529...) keeps working unchanged.
+app.post('/api/claude', appAuth, (req, res) => {
+    const apiKey = String(req.headers['x-api-key'] || '').replace(/[^\x21-\x7E]/g, '');
+    if (!apiKey) return res.status(400).json({ type: 'error', error: { type: 'invalid_request_error', message: 'Missing x-api-key' } });
+
+    const https = require('https');
+    const body = JSON.stringify(req.body || {});
+    const upstream = https.request({
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+            'x-api-key': apiKey,
+            'anthropic-version': req.headers['anthropic-version'] || '2023-06-01'
+        }
+    }, (up) => {
+        let data = '';
+        up.on('data', d => data += d);
+        up.on('end', () => {
+            res.status(up.statusCode || 502).type('application/json').send(data);
+        });
+    });
+    upstream.on('error', (e) => {
+        if (!res.headersSent) res.status(502).json({ type: 'error', error: { type: 'api_error', message: 'Upstream: ' + e.message } });
+    });
+    upstream.setTimeout(180000, () => {
+        upstream.destroy();
+        if (!res.headersSent) res.status(504).json({ type: 'error', error: { type: 'api_error', message: 'Upstream timeout' } });
+    });
+    upstream.write(body);
+    upstream.end();
+});
+
 // POST Translation
 app.post('/api/translations', (req, res) => {
     const { employeeId, employeeName, timestamp, translation } = req.body;
